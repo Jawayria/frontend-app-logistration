@@ -14,7 +14,7 @@ import { loginRequestSelector, thirdPartyAuthContextSelector } from './data/sele
 import LoginHelpLinks from './LoginHelpLinks';
 import RedirectLogistration from './RedirectLogistration';
 import LoginFailureMessage from './LoginFailure';
-
+import InstitutionLogistration, { RenderInstitutionButton } from './InstitutionLogistration';
 
 class LoginPage extends React.Component {
   constructor(props, context) {
@@ -30,6 +30,7 @@ class LoginPage extends React.Component {
       emailValid: false,
       passwordValid: false,
       formValid: false,
+      institutionLogin: false,
     };
   }
 
@@ -39,6 +40,10 @@ class LoginPage extends React.Component {
       redirect_to: params.get('next') || DEFAULT_REDIRECT_URL,
     };
     this.props.getThirdPartyAuthContext(payload);
+  }
+
+  handleInstitutionLogin = () => {
+    this.setState(prevState => ({ institutionLogin: !prevState.institutionLogin }));
   }
 
   handleSubmit = (e) => {
@@ -104,6 +109,16 @@ class LoginPage extends React.Component {
   }
 
   render() {
+    if (this.state.institutionLogin) {
+      return (
+        <InstitutionLogistration
+          onSubmitHandler={this.handleInstitutionLogin}
+          secondaryProviders={this.props.thirdPartyAuthContext.secondaryProviders}
+          headingTitle="Sign in with Institution/Campus Credentials"
+          buttonTitle="Back"
+        />
+      );
+    }
     return (
       <>
         <RedirectLogistration
@@ -119,10 +134,17 @@ class LoginPage extends React.Component {
                 First time here?<a className="ml-1" href="/register">Create an Account.</a>
               </p>
             </div>
+            <h3 className="text-left mt-3">Sign In</h3>
+            <RenderInstitutionButton
+              onSubmitHandler={this.handleInstitutionLogin}
+              secondaryProviders={this.props.thirdPartyAuthContext.secondaryProviders}
+              buttonTitle="Use my university info"
+            />
+            <div className="section-heading-line mb-4">
+              <h4>or sign in with</h4>
+            </div>
             <form className="m-0">
               <div className="form-group">
-                <h3 className="text-center mt-3">Sign In</h3>
-
                 <div className="d-flex flex-column align-items-start">
                   <ValidationFormGroup
                     for="email"

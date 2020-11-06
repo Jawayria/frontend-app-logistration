@@ -61,7 +61,6 @@ export async function getThirdPartyAuthContext(urlParams) {
     .catch((e) => {
       throw (e);
     });
-
   return {
     thirdPartyAuthContext: camelCaseObject(data),
   };

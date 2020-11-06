@@ -9,10 +9,12 @@ import { faFacebookF, faGoogle, faMicrosoft } from '@fortawesome/free-brands-svg
 import { faGraduationCap } from '@fortawesome/free-solid-svg-icons';
 import { getLocale, getCountryList } from '@edx/frontend-platform/i18n';
 
-import { registerNewUser } from './data/actions';
-import { registrationRequestSelector } from './data/selectors';
+import { getThirdPartyAuthContext, registerNewUser } from './data/actions';
+import { registrationRequestSelector, thirdPartyAuthContextSelector } from './data/selectors';
+import { DEFAULT_REDIRECT_URL } from './data/constants';
 import RedirectLogistration from './RedirectLogistration';
 import RegistrationFailure from './RegistrationFailure';
+import InstitutionLogistration, { RenderInstitutionButton } from './InstitutionLogistration';
 
 class RegistrationPage extends React.Component {
   constructor(props, context) {
@@ -37,7 +39,20 @@ class RegistrationPage extends React.Component {
       passwordValid: false,
       countryValid: false,
       formValid: false,
+      institutionLogin: false,
     };
+  }
+
+  componentDidMount() {
+    const params = (new URL(document.location)).searchParams;
+    const payload = {
+      redirect_to: params.get('next') || DEFAULT_REDIRECT_URL,
+    };
+    this.props.getThirdPartyAuthContext(payload);
+  }
+
+  handleInstitutionLogin = () => {
+    this.setState(prevState => ({ institutionLogin: !prevState.institutionLogin }));
   }
 
   handleSubmit = (e) => {
@@ -142,6 +157,16 @@ class RegistrationPage extends React.Component {
   }
 
   render() {
+    if (this.state.institutionLogin) {
+      return (
+        <InstitutionLogistration
+          onSubmitHandler={this.handleInstitutionLogin}
+          secondaryProviders={this.props.thirdPartyAuthContext.secondaryProviders}
+          headingTitle="Register with Institution/Campus Credentials"
+          buttonTitle="Create an Account"
+        />
+      );
+    }
     return (
       <>
         <RedirectLogistration
@@ -158,7 +183,12 @@ class RegistrationPage extends React.Component {
             <span className="d-block mx-auto mb-4 section-heading-line">Create an account using</span>
             <button type="button" className="btn-social facebook"><FontAwesomeIcon className="mr-2" icon={faFacebookF} />Facebook</button>
             <button type="button" className="btn-social google"><FontAwesomeIcon className="mr-2" icon={faGoogle} />Google</button>
-            <button type="button" className="btn-social microsoft"><FontAwesomeIcon className="mr-2" icon={faMicrosoft} />Microsoft</button>
+            <button type="button" className="btn-social microsoft mb-2"><FontAwesomeIcon className="mr-2" icon={faMicrosoft} />Microsoft</button>
+            <RenderInstitutionButton
+              onSubmitHandler={this.handleInstitutionLogin}
+              secondaryProviders={this.props.thirdPartyAuthContext.secondaryProviders}
+              buttonTitle="Use my institution/campus credentials"
+            />
             <span className="d-block mx-auto text-center mt-4 section-heading-line">or create a new one here</span>
           </div>
 
@@ -267,11 +297,13 @@ RegistrationPage.defaultProps = {
   registrationResult: null,
   registerNewUser: null,
   registrationError: null,
+  thirdPartyAuthContext: {},
 };
 
 
 RegistrationPage.propTypes = {
   registerNewUser: PropTypes.func,
+  getThirdPartyAuthContext: PropTypes.func.isRequired,
   registrationResult: PropTypes.shape({
     redirectUrl: PropTypes.string,
     success: PropTypes.bool,
@@ -280,12 +312,27 @@ RegistrationPage.propTypes = {
     email: PropTypes.array,
     username: PropTypes.array,
   }),
+  thirdPartyAuthContext: PropTypes.shape({
+    currentProvider: PropTypes.string,
+    providers: PropTypes.array,
+    secondaryProviders: PropTypes.array,
+    finishAuthUrl: PropTypes.string,
+    pipelineUserDetails: PropTypes.shape({
+      email: PropTypes.string,
+      fullname: PropTypes.string,
+      firstName: PropTypes.string,
+      lastName: PropTypes.string,
+      username: PropTypes.string,
+    }),
+  }),
 };
 
 const mapStateToProps = state => {
   const registrationResult = registrationRequestSelector(state);
+  const thirdPartyAuthContext = thirdPartyAuthContextSelector(state);
   return {
     registrationResult,
+    thirdPartyAuthContext,
     registrationError: state.logistration.registrationError,
   };
 };
@@ -293,6 +340,7 @@ const mapStateToProps = state => {
 export default connect(
   mapStateToProps,
   {
+    getThirdPartyAuthContext,
     registerNewUser,
   },
 )(RegistrationPage);

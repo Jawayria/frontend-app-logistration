@@ -15,6 +15,7 @@ describe('LoginPage', () => {
     logistration: {
       forgotPassword: { status: null },
       loginResult: { success: false, redirectUrl: '' },
+      thirdPartyAuthContext: { secondaryProviders: [] },
       response_error: null,
     },
   };
@@ -78,6 +79,7 @@ describe('LoginPage', () => {
       ...store,
       logistration: {
         ...store.logistration,
+        thirdPartyAuthContext: { secondaryProviders: [] },
         loginResult: {
           success: true,
           redirectUrl: dasboardUrl,
@@ -102,6 +104,7 @@ describe('LoginPage', () => {
       ...store,
       logistration: {
         ...store.logistration,
+        thirdPartyAuthContext: { secondaryProviders: [] },
         loginResult: {
           success: false,
           redirectUrl: '',
@@ -119,6 +122,7 @@ describe('LoginPage', () => {
       ...store,
       logistration: {
         ...store.logistration,
+        thirdPartyAuthContext: { secondaryProviders: [] },
         loginResult: {
           success: false,
           redirectUrl: '',
@@ -129,5 +133,61 @@ describe('LoginPage', () => {
 
     const tree = renderer.create(reduxWrapper(<IntlLoginPage {...props} />)).toJSON();
     expect(tree).toMatchSnapshot();
+  });
+
+  it('should display institution login button', () => {
+    store = mockStore({
+      ...store,
+      logistration: {
+        ...store.logistration,
+        loginResult: {
+          success: true,
+          redirectUrl: '',
+        },
+        thirdPartyAuthContext: {
+          secondaryProviders: [
+            {
+              id: 'saml-test',
+              name: 'Test University',
+              loginUrl: '/dummy-auth',
+              registerUrl: '/dummy_auth',
+            },
+          ],
+        },
+      },
+    });
+    const root = mount(reduxWrapper(<IntlLoginPage {...props} />));
+    expect(root.text().includes('Use my university info')).toBe(true);
+  });
+
+  it('should not display institution login button', () => {
+    const root = mount(reduxWrapper(<IntlLoginPage {...props} />));
+    expect(root.text().includes('Use my university info')).toBe(false);
+  });
+
+  it('should display institution login page', () => {
+    store = mockStore({
+      ...store,
+      logistration: {
+        ...store.logistration,
+        loginResult: {
+          success: true,
+          redirectUrl: '',
+        },
+        thirdPartyAuthContext: {
+          secondaryProviders: [
+            {
+              id: 'saml-test',
+              name: 'Test University',
+              loginUrl: '/dummy-auth',
+              registerUrl: '/dummy_auth',
+            },
+          ],
+        },
+      },
+    });
+    const loginPage = mount(reduxWrapper(<IntlLoginPage {...props} />));
+    loginPage.find('button.submit').at(0).simulate('click', { institutionLogin: true });
+    expect(loginPage.text().includes('Test University')).toBe(true);
   });
 });
